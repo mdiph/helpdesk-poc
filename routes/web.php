@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Web\AttachmentController;
+use App\Http\Controllers\Web\CategoryController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\ReportController;
@@ -62,5 +63,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('users', UserController::class)->except(['show', 'destroy']);
         Route::put('users/{user}/active', [UserController::class, 'toggleActive'])->name('users.toggle-active');
         Route::put('users/{user}/password', [UserController::class, 'resetPassword'])->name('users.reset-password');
+
+        Route::resource('categories', CategoryController::class)->except(['show']);
     });
 });

@@ -46,21 +46,41 @@ class TicketRbacTest extends TestCase
         $this->assertDatabaseHas('ticket_activities', ['ticket_id' => $ticket->id, 'event' => 'created']);
     }
 
-    public function test_l2_cannot_see_unescalated_l1_ticket(): void
+    public function test_every_agent_can_view_any_ticket(): void
     {
         $l1 = User::factory()->l1()->create();
         $l2 = User::factory()->l2()->create();
-        $ticket = Ticket::factory()->for($l1, 'creator')->create();
+        $viewer = User::factory()->viewer()->create();
+        $ticket = Ticket::factory()->for($l1, 'creator')->create();      // L1 queue
+        $escalated = Ticket::factory()->for($l1, 'creator')->escalated()->create();
 
-        $this->actingAs($l2)->get(route('tickets.show', $ticket))->assertForbidden();
+        foreach ([$l1, $l2, $viewer] as $user) {
+            $this->actingAs($user)->get(route('tickets.show', $ticket))->assertOk();
+            $this->actingAs($user)->get(route('tickets.show', $escalated))->assertOk();
+        }
     }
 
-    public function test_l2_can_see_escalated_ticket(): void
+    public function test_l1_keeps_visibility_after_escalation_but_cannot_edit(): void
+    {
+        $l1 = User::factory()->l1()->create();
+        $editor = User::factory()->l1()->create();
+        $ticket = Ticket::factory()->for($l1, 'creator')->escalated()->create();
+
+        // Another L1 (not the creator/assignee) can read it...
+        $this->actingAs($editor)->get(route('tickets.show', $ticket))->assertOk();
+        // ...but the L2 queue is not theirs to change.
+        $this->assertFalse($editor->can('update', $ticket));
+    }
+
+    public function test_only_admin_can_delete_a_ticket(): void
     {
         $l1 = User::factory()->l1()->create();
         $l2 = User::factory()->l2()->create();
-        $ticket = Ticket::factory()->for($l1, 'creator')->escalated()->create();
+        $admin = User::factory()->admin()->create();
+        $ticket = Ticket::factory()->for($l1, 'creator')->create();
 
-        $this->actingAs($l2)->get(route('tickets.show', $ticket))->assertOk();
+        $this->assertFalse($l1->can('delete', $ticket));
+        $this->assertFalse($l2->can('delete', $ticket));
+        $this->assertTrue($admin->can('delete', $ticket));
     }
 }

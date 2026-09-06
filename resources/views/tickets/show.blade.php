@@ -44,13 +44,13 @@
                             </a>
                             <span class="text-gray-400">{{ $attachment->humanSize() }}</span>
                             <span class="text-gray-400">· {{ $attachment->uploader?->name }}</span>
-                            @if ($attachment->uploaded_by === auth()->id() || auth()->user()->can('manageAttachments', $ticket))
+                            @can('deleteAttachment', $ticket)
                                 <form method="POST" action="{{ route('tickets.attachments.destroy', [$ticket, $attachment]) }}" class="ml-auto"
                                       onsubmit="return confirm('Remove this attachment?')">
                                     @csrf @method('DELETE')
                                     <button class="text-xs text-red-600 hover:underline">Remove</button>
                                 </form>
-                            @endif
+                            @endcan
                         </li>
                     @empty
                         <li class="py-2 text-sm text-gray-400">No attachments.</li>

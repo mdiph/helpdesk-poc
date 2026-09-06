@@ -5,6 +5,7 @@
         ['label' => 'Tickets', 'route' => 'tickets.index', 'pattern' => 'tickets*', 'show' => true],
         ['label' => 'New ticket', 'route' => 'tickets.create', 'pattern' => 'tickets.create', 'show' => $user->can('create', \App\Models\Ticket::class)],
         ['label' => 'Reports', 'route' => 'reports.index', 'pattern' => 'reports*', 'show' => true],
+        ['label' => 'Categories', 'route' => 'categories.index', 'pattern' => 'categories*', 'show' => $user->isAdmin()],
         ['label' => 'Users', 'route' => 'users.index', 'pattern' => 'users*', 'show' => $user->isAdmin()],
     ];
 @endphp

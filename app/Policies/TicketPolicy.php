@@ -8,35 +8,27 @@ use App\Models\Ticket;
 use App\Models\User;
 
 /**
- * Authorization rules for tickets. Every controller (web and API) calls
- * these; the matching query filter is Ticket::scopeVisibleTo().
+ * Authorization rules for tickets. Every controller (web and API) calls these.
  *
- * Summary:
+ * Reading:  any authenticated user can see any ticket (L1 keeps visibility of
+ *           tickets after they are escalated to L2).
+ * Writing:  queue-gated -
  *   Admin   - everything
- *   L1      - owns the L1 queue: create, view, update, assign, escalate
- *   L2      - handles the L2 queue: view, update, assign, resolve
- *   Viewer  - read only
+ *   L1      - the L1 queue + tickets they created / are assigned to; may escalate
+ *   L2      - the L2 queue + tickets they are assigned to
+ *   Viewer  - nothing
+ *   Delete  - Admin only (tickets and attachments)
  */
 class TicketPolicy
 {
     public function viewAny(User $user): bool
     {
-        return true; // list results are constrained by scopeVisibleTo()
+        return true;
     }
 
     public function view(User $user, Ticket $ticket): bool
     {
-        if ($user->isAdmin() || $user->isViewer()) {
-            return true;
-        }
-
-        if ($this->isParticipant($user, $ticket)) {
-            return true;
-        }
-
-        return $user->isL2()
-            ? $ticket->support_tier === SupportTier::L2
-            : $ticket->support_tier === SupportTier::L1;
+        return true; // all roles may read every ticket
     }
 
     public function create(User $user): bool
@@ -83,6 +75,12 @@ class TicketPolicy
     }
 
     public function delete(User $user, Ticket $ticket): bool
+    {
+        return $user->isAdmin();
+    }
+
+    /** Removing an uploaded file is destructive - Admin only. */
+    public function deleteAttachment(User $user, Ticket $ticket): bool
     {
         return $user->isAdmin();
     }

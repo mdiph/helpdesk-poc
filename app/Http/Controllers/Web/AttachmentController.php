@@ -44,12 +44,8 @@ class AttachmentController extends Controller
     {
         abort_unless($attachment->ticket_id === $ticket->id, 404);
 
-        // Uploader or anyone who can manage the ticket's attachments.
-        abort_unless(
-            $attachment->uploaded_by === $request->user()->id
-                || $request->user()->can('manageAttachments', $ticket),
-            403
-        );
+        // Deleting a file is destructive - Admin only.
+        $this->authorize('deleteAttachment', $ticket);
 
         $attachment->delete();
 

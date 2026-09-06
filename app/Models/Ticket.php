@@ -186,29 +186,12 @@ class Ticket extends Model
     }
 
     /**
-     * Restrict the query to tickets the given user is allowed to see.
-     * Enforced in addition to the TicketPolicy so list endpoints never leak.
+     * Ticket read access is not row-restricted: every authenticated role may
+     * see every ticket (see TicketPolicy). This scope is kept as the single
+     * place to reintroduce per-user filtering if that ever changes.
      */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->isAdmin() || $user->isViewer()) {
-            return $query; // full read access
-        }
-
-        if ($user->isL2()) {
-            // L2 sees escalated tickets plus anything assigned to them.
-            return $query->where(function (Builder $q) use ($user) {
-                $q->where('support_tier', SupportTier::L2->value)
-                    ->orWhere('assigned_to', $user->id)
-                    ->orWhere('created_by', $user->id);
-            });
-        }
-
-        // L1 sees the L1 queue plus tickets they created or own.
-        return $query->where(function (Builder $q) use ($user) {
-            $q->where('support_tier', SupportTier::L1->value)
-                ->orWhere('assigned_to', $user->id)
-                ->orWhere('created_by', $user->id);
-        });
+        return $query;
     }
 }

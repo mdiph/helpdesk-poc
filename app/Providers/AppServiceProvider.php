@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\Category;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Policies\CategoryPolicy;
 use App\Policies\TicketPolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -24,6 +26,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(Ticket::class, TicketPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
+        Gate::policy(Category::class, CategoryPolicy::class);
 
         // Simple named gates for whole sections of the UI/API.
         Gate::define('manage-users', fn (User $user) => $user->isAdmin());

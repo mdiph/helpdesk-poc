@@ -41,6 +41,7 @@ flat controller/service/model structure, and Docker Compose for deployment.
 | Export | Ticket list → CSV / Excel (XLSX) / PDF; single ticket → PDF (with history) |
 | Reports | Date-range report: totals, status, priority, category, L1 vs L2, per assignee, avg/median resolution time; export to CSV / XLSX / PDF |
 | User management | Admin CRUD, enable/disable, role assignment, password reset |
+| Category management | Admin: create, rename, hide/show, delete (with ticket counts) |
 | API | REST endpoints mirroring the above, Sanctum bearer tokens, same RBAC |
 
 ---
@@ -63,9 +64,11 @@ API client ─ REST /api  (Sanctum bearer token)  ┘                    │
   * `AttachmentService` — file storage
   * `ActivityLogger` — the audit trail
   * `DashboardService` / `ReportService` — read-side aggregation
-* **Authorization** is enforced two ways that must both pass:
-  * `TicketPolicy` / `UserPolicy` for single-record actions
-  * `Ticket::scopeVisibleTo()` for every list/query so results never leak
+* **Authorization**: `TicketPolicy` / `UserPolicy` / `CategoryPolicy` for
+  single-record actions; role middleware (`role:admin`) guards whole admin
+  sections. Ticket *reads* are open to all authenticated roles;
+  `Ticket::scopeVisibleTo()` is kept as the single hook to reintroduce
+  row-level filtering if that ever needs to change.
 * **Enums** (`app/Enums`) define statuses, priorities, tiers and role names.
 
 ---
@@ -106,23 +109,27 @@ tests/              Feature + Unit tests
 | Capability | Admin | L1 | L2 | Viewer |
 |---|:--:|:--:|:--:|:--:|
 | View dashboard / reports | ✅ | ✅ | ✅ | ✅ |
-| See **all** tickets | ✅ | queue* | queue* | ✅ |
+| **View any ticket** (incl. after escalation) | ✅ | ✅ | ✅ | ✅ |
 | Create ticket | ✅ | ✅ | — | — |
-| Update / status / assign | ✅ | L1 queue | L2 queue | — |
+| Update / status / assign | ✅ | L1 queue* | L2 queue* | — |
 | Escalate L1 → L2 | ✅ | ✅ | — | — |
 | Comment (public) | ✅ | ✅ | ✅ | — |
 | Internal notes | ✅ | ✅ | ✅ | (hidden) |
-| Upload / delete attachments | ✅ | L1 queue | L2 queue | — |
-| Delete ticket | ✅ | — | — | — |
+| Upload attachments | ✅ | L1 queue* | L2 queue* | — |
+| Delete ticket / attachment | ✅ | — | — | — |
 | Export & reports | ✅ | ✅ | ✅ | ✅ |
+| Category management | ✅ | — | — | — |
 | User management | ✅ | — | — | — |
 
-\* *queue* = the tier the agent owns (L1 sees the L1 queue, L2 the L2 queue) **plus**
-any ticket they created or are assigned to. Closed tickets are read-only for
-non-admins.
+**Reading is not restricted** — every authenticated role can open every ticket,
+so L1 keeps sight of a ticket after escalating it. **Writing is queue-gated:**
 
-Roles are fixed and seeded once (`RoleSeeder`). Change a user's role from
-**Users → Edit**.
+\* *queue* = the tier the agent owns (L1 → L1 queue, L2 → L2 queue) **plus** any
+ticket they created or are assigned to. Closed tickets are read-only for
+non-admins. **All deletion is Admin-only.**
+
+Roles are fixed and seeded once (`RoleSeeder`). Categories are managed by admins
+under **Categories**. Change a user's role from **Users → Edit**.
 
 ---
 
@@ -401,11 +408,12 @@ build with `pdo_sqlite` is required locally. Code style: `./vendor/bin/pint`.
 
 ## Maintenance notes
 
-* **Add a ticket category**: *(no admin UI by design — keep it deliberate)*
-  insert into `categories` or extend `CategorySeeder` and re-run it.
+* **Add a ticket category**: **Categories** in the sidebar (admin only). The
+  `CategorySeeder` still provides the initial set on a fresh database.
 * **Change what counts as an "open" state**: `App\Enums\TicketStatus::openStates()`.
-* **Change visibility rules**: keep `TicketPolicy` and `Ticket::scopeVisibleTo()`
-  in sync — they must agree.
+* **Change visibility rules**: `TicketPolicy::view()` currently returns `true`
+  for everyone; tighten it there and add the matching `where` in
+  `Ticket::scopeVisibleTo()` (used by every list/report/export query).
 * **Ticket reference format**: `Ticket::booted()` + `TICKET_REFERENCE_PREFIX`.
 * **Queue**: `QUEUE_CONNECTION=sync` by default (no worker needed). Nothing in
   the app currently queues work; switch to `database` and run
