@@ -38,8 +38,9 @@ echo "Database is up."
 
 php artisan migrate --force
 
-# Seed roles / categories / initial admin on first boot (idempotent seeders).
-php artisan db:seed --force || true
+# Seed roles / categories / initial admin. Seeders are idempotent
+# (firstOrCreate / updateOrCreate) so this is safe to run on every boot.
+php artisan db:seed --force
 
 # Cache framework config, routes and views for performance.
 php artisan config:cache

@@ -30,7 +30,8 @@ class Role extends Model
         return $this->hasMany(User::class);
     }
 
-    public function is(RoleName $name): bool
+    /** Note: not named is() - that would clash with Eloquent's Model::is(). */
+    public function hasName(RoleName $name): bool
     {
         return $this->name === $name;
     }
