@@ -55,11 +55,10 @@ CMD ["php-fpm"]
 # ---------------------------------------------------------------------------
 # Stage 4 - Nginx image (serves static files, proxies PHP to the app container)
 # ---------------------------------------------------------------------------
-# It bundles public/ so it can serve the built assets directly and so
-# $realpath_root resolves to the same /var/www/html/public path that the
-# php-fpm "app" container sees (required for FastCGI SCRIPT_FILENAME).
+# public/ is copied FROM the runtime stage (not rebuilt) so the static files
+# nginx serves are byte-for-byte the ones the app container generates manifest
+# entries for - otherwise a hash drift between two Vite builds 404s the CSS/JS.
 FROM nginx:1.27-alpine AS web
 
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
-COPY public /var/www/html/public
-COPY --from=assets /app/public/build /var/www/html/public/build
+COPY --from=runtime /var/www/html/public /var/www/html/public
