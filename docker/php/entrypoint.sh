@@ -3,6 +3,11 @@ set -e
 
 cd /var/www/html
 
+# Make sure the writable runtime directories exist (a volume mount can shadow
+# the ones created in the image).
+mkdir -p storage/framework/cache/data storage/framework/sessions \
+         storage/framework/views storage/logs storage/app/attachments bootstrap/cache
+
 # ---------------------------------------------------------------------------
 # Only run the full bootstrap sequence for the long-running server process.
 # One-off commands (`docker compose run --rm app php artisan ...`) skip it.
@@ -39,7 +44,7 @@ php artisan db:seed --force || true
 # Cache framework config, routes and views for performance.
 php artisan config:cache
 php artisan route:cache
-php artisan view:cache
+php artisan view:cache || true
 
 # Ensure the storage symlink exists (used only for the 'public' disk).
 php artisan storage:link || true
