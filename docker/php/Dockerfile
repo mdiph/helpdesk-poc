@@ -51,3 +51,15 @@ USER www-data
 
 ENTRYPOINT ["/var/www/html/docker/php/entrypoint.sh"]
 CMD ["php-fpm"]
+
+# ---------------------------------------------------------------------------
+# Stage 4 - Nginx image (serves static files, proxies PHP to the app container)
+# ---------------------------------------------------------------------------
+# It bundles public/ so it can serve the built assets directly and so
+# $realpath_root resolves to the same /var/www/html/public path that the
+# php-fpm "app" container sees (required for FastCGI SCRIPT_FILENAME).
+FROM nginx:1.27-alpine AS web
+
+COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY public /var/www/html/public
+COPY --from=assets /app/public/build /var/www/html/public/build
