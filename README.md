@@ -219,10 +219,12 @@ cp .env.example .env
 Edit `.env`:
 
 * `APP_ENV=production`, `APP_DEBUG=false`
-* `APP_URL=https://helpdesk.example.com`
+* `APP_URL=` — the exact URL you browse to (`http://SERVER_IP:8080` while testing,
+  `https://helpdesk.example.com` once a domain + TLS are in place)
 * `DB_PASSWORD=` — a strong password
 * `ADMIN_EMAIL` / `ADMIN_PASSWORD` — your first admin
-* `SESSION_SECURE_COOKIE=true`
+* `SESSION_SECURE_COOKIE` — `false` while serving over plain HTTP, `true` once
+  you are on HTTPS (leaving it `true` on HTTP makes every login fail with a 419)
 
 Generate the app key and paste it into `.env`:
 
