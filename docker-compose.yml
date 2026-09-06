@@ -1,0 +1,52 @@
+# Helpdesk - production Docker Compose stack.
+#
+#   docker compose build
+#   docker compose up -d
+#
+# The `app` container runs migrations + seeders on start (see entrypoint.sh).
+# HTTPS is expected to be terminated by a host reverse proxy in front of `web`
+# (see README - "Reverse proxy & HTTPS").
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - attachments:/var/www/html/storage/app/attachments
+      - app_storage:/var/www/html/storage/logs
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "${APP_PORT:-8080}:80"
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-helpdesk}
+      POSTGRES_USER: ${DB_USERNAME:-helpdesk}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-helpdesk} -d ${DB_DATABASE:-helpdesk}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db_data:
+  attachments:
+  app_storage:
