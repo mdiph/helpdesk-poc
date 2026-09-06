@@ -56,6 +56,10 @@
             @include('partials.flash')
             @yield('content')
         </main>
+
+        <footer class="px-4 pb-6 pt-2 text-center text-xs text-gray-400 sm:px-6 lg:px-8">
+            {{ config('app.name') }} &middot; {{ config('helpdesk.credit') }} &middot; &copy; {{ date('Y') }}
+        </footer>
     </div>
 </div>
 </body>

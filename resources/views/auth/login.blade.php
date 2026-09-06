@@ -43,7 +43,9 @@
         </form>
     </div>
 
-    <p class="mt-6 text-center text-xs text-gray-400">{{ config('app.name') }} &copy; {{ date('Y') }}</p>
+    <p class="mt-6 text-center text-xs text-gray-400">
+        {{ config('helpdesk.credit') }} &middot; &copy; {{ date('Y') }}
+    </p>
 </div>
 </body>
 </html>
